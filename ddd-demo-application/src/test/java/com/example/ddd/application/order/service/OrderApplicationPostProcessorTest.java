@@ -1,33 +1,25 @@
 package com.example.ddd.application.order.service;
 
-import com.example.ddd.application.order.assembler.OrderDtoAssembler;
-import com.example.ddd.application.order.command.CancelOrderCommand;
-import com.example.ddd.application.order.dto.OrderDetailDTO;
 import com.example.ddd.application.order.port.OrderApplicationEventPublisher;
 import com.example.ddd.application.order.port.OrderOperationLogRecorder;
-import com.example.ddd.application.order.validator.CancelOrderCommandValidator;
 import com.example.ddd.domain.order.model.Money;
 import com.example.ddd.domain.order.model.Order;
 import com.example.ddd.domain.order.model.OrderId;
 import com.example.ddd.domain.order.model.OrderItem;
 import com.example.ddd.domain.order.model.ProductId;
 import com.example.ddd.domain.order.model.UserId;
-import com.example.ddd.domain.order.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class CancelOrderAppServiceTest {
+class OrderApplicationPostProcessorTest {
 
     @Test
-    void shouldCancelOrderWhenOrderExists() {
-        InMemoryOrderRepository orderRepository = new InMemoryOrderRepository();
+    void shouldRecordLogAndPublishEventAfterOrderPlaced() {
         CountingLogRecorder logRecorder = new CountingLogRecorder();
         CountingEventPublisher eventPublisher = new CountingEventPublisher();
+        OrderApplicationPostProcessor postProcessor = new OrderApplicationPostProcessor(logRecorder, eventPublisher);
         Order order = Order.create(
             OrderId.of("order-100"),
             UserId.of(1001L),
@@ -35,43 +27,41 @@ class CancelOrderAppServiceTest {
                 OrderItem.of(ProductId.of(2001L), "DDD 实战课程", 1, Money.of(new BigDecimal("199.00")))
             )
         );
-        orderRepository.save(order);
-        CancelOrderAppService appService = new CancelOrderAppService(
-            new CancelOrderCommandValidator(),
-            orderRepository,
-            new OrderApplicationPostProcessor(logRecorder, eventPublisher),
-            new OrderDtoAssembler()
+
+        postProcessor.afterOrderPlaced(order);
+
+        Assertions.assertEquals(1, logRecorder.placedCount);
+        Assertions.assertEquals(1, eventPublisher.createdCount);
+    }
+
+    @Test
+    void shouldRecordLogAndPublishEventAfterOrderCanceled() {
+        CountingLogRecorder logRecorder = new CountingLogRecorder();
+        CountingEventPublisher eventPublisher = new CountingEventPublisher();
+        OrderApplicationPostProcessor postProcessor = new OrderApplicationPostProcessor(logRecorder, eventPublisher);
+        Order order = Order.create(
+            OrderId.of("order-101"),
+            UserId.of(1001L),
+            Collections.singletonList(
+                OrderItem.of(ProductId.of(2001L), "DDD 实战课程", 1, Money.of(new BigDecimal("199.00")))
+            )
         );
+        order.cancel("用户主动取消");
 
-        OrderDetailDTO detail = appService.cancelOrder(new CancelOrderCommand("order-100", "用户主动取消"));
+        postProcessor.afterOrderCanceled(order);
 
-        Assertions.assertEquals("CANCELED", detail.getStatus());
-        Assertions.assertEquals("用户主动取消", detail.getCancelReason());
         Assertions.assertEquals(1, logRecorder.canceledCount);
         Assertions.assertEquals(1, eventPublisher.canceledCount);
     }
 
-    private static class InMemoryOrderRepository implements OrderRepository {
-
-        private final Map<String, Order> store = new HashMap<String, Order>();
-
-        @Override
-        public void save(Order order) {
-            store.put(order.getId().getValue(), order);
-        }
-
-        @Override
-        public Optional<Order> findById(OrderId orderId) {
-            return Optional.ofNullable(store.get(orderId.getValue()));
-        }
-    }
-
     private static class CountingLogRecorder implements OrderOperationLogRecorder {
 
+        private int placedCount;
         private int canceledCount;
 
         @Override
         public void recordOrderPlaced(Order order) {
+            placedCount++;
         }
 
         @Override
@@ -82,10 +72,12 @@ class CancelOrderAppServiceTest {
 
     private static class CountingEventPublisher implements OrderApplicationEventPublisher {
 
+        private int createdCount;
         private int canceledCount;
 
         @Override
         public void publishOrderCreated(Order order) {
+            createdCount++;
         }
 
         @Override

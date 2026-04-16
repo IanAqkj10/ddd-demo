@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>com.example</groupId>
+            <artifactId>ddd-demo-application</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
             <artifactId>ddd-demo-domain</artifactId>
             <version>${project.version}</version>
         </dependency>

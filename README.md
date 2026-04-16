@@ -88,15 +88,17 @@
 
 下单接口调用链如下：
 
-`Controller -> AppService -> DomainService -> Aggregate -> Repository -> MyBatis-Plus`
+`Controller -> AppService -> PreCheck -> DomainService -> Repository -> PostProcessor -> MyBatis-Plus`
 
 其中：
 
 - Controller 负责接收 HTTP 请求
 - AppService 负责组织一次完整用例
+- PreCheck 负责 application 层前置检查
 - DomainService 负责协调需要外部能力参与的领域逻辑
 - Aggregate 负责守住自身业务规则
 - Repository 负责用业务语言读写聚合
+- PostProcessor 负责 application 层后处理动作，比如日志和应用事件
 - MyBatis-Plus 只是一种持久化实现细节
 
 ## DDD 分层结构图
@@ -137,14 +139,17 @@ sequenceDiagram
     actor User as 用户
     participant C as OrderController
     participant A as PlaceOrderAppService
+    participant P as PlaceOrderPreCheckService
     participant D as OrderDomainService
     participant G as InventoryGateway
     participant O as Order
     participant R as OrderRepository
+    participant X as OrderApplicationPostProcessor
     participant M as MyBatis-Plus Mapper
 
     User->>C: POST /api/orders
     C->>A: placeOrder(command)
+    A->>P: check(command)
     A->>D: placeOrder(userId, items)
     D->>G: checkAvailable(items)
     G-->>D: 库存通过
@@ -155,6 +160,7 @@ sequenceDiagram
     R->>M: insert order / items
     M-->>R: 持久化完成
     R-->>A: 保存成功
+    A->>X: afterOrderPlaced(order)
     A-->>C: OrderDetailDTO
     C-->>User: 返回下单结果
 ```
@@ -162,9 +168,10 @@ sequenceDiagram
 这个时序图表达的是 DDD 最常见的一层意思：
 
 - 接口层只接 HTTP，不直接写业务规则
-- 应用层只编排用例，不直接写数据库细节
+- 应用层编排完整流程，不直接写数据库细节
 - 领域层负责真正的业务决策
 - 基础设施层只负责把领域对象存进去或接外部能力
+- 日志记录、事件发布这类非核心业务动作，也可以作为 application 的后处理步骤出现
 
 ### 3. 运行期取消订单调用链
 
