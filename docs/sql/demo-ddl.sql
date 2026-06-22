@@ -20,3 +20,15 @@ CREATE TABLE `t_order_item` (
   PRIMARY KEY (`id`),
   KEY `idx_order_id` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单项表';
+
+CREATE TABLE `t_membership` (
+  `membership_id` bigint NOT NULL COMMENT '会员ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `user_name` varchar(64) NOT NULL COMMENT '用户名',
+  `points` int NOT NULL DEFAULT 0 COMMENT '积分',
+  `level` varchar(32) NOT NULL COMMENT '会员等级',
+  `joined_at` datetime NOT NULL COMMENT '加入时间',
+  `last_updated_at` datetime NOT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`membership_id`),
+  UNIQUE KEY `uk_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员表';

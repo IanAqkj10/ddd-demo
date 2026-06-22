@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.ddd.infrastructure.membership.mapper.MembershipMapper">
+
+    <select id="selectByUserId" resultType="com.example.ddd.infrastructure.membership.dataobject.MembershipDO">
+        SELECT membership_id, user_id, user_name, points, level, joined_at, last_updated_at
+        FROM t_membership
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>
