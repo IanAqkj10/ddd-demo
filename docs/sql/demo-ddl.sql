@@ -32,3 +32,27 @@ CREATE TABLE `t_membership` (
   PRIMARY KEY (`membership_id`),
   UNIQUE KEY `uk_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员表';
+
+CREATE TABLE `t_iam_user` (
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `username` varchar(64) NOT NULL COMMENT '登录名',
+  `password_hash` varchar(128) NOT NULL COMMENT '密码哈希',
+  `password_salt` varchar(64) NOT NULL COMMENT '密码盐',
+  `status` varchar(16) NOT NULL COMMENT '用户状态：ACTIVE/DISABLED',
+  `role_ids` varchar(512) NOT NULL DEFAULT '' COMMENT '角色ID列表，逗号分隔',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `last_updated_at` datetime NOT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uk_username` (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IAM 用户表';
+
+CREATE TABLE `t_iam_role` (
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `code` varchar(64) NOT NULL COMMENT '角色编码',
+  `name` varchar(64) NOT NULL COMMENT '角色名称',
+  `permissions` varchar(2048) NOT NULL DEFAULT '' COMMENT '权限编码列表，逗号分隔',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `last_updated_at` datetime NOT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`role_id`),
+  UNIQUE KEY `uk_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IAM 角色表';
